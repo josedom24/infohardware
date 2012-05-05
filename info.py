@@ -70,11 +70,11 @@ for i in info:
     cont += 1
 
 # HD
-info = arbol.xpath("//node[@class='disk']/description[contains(text(),'Disk')]/..")
+info = arbol.xpath("//node[@class='disk']/description[contains(text(),'Disk')]/../size/text()")
 datos["Discos duros"] = {}
 cont = 1
 for i in info:
-    thd = conversor(i.find("size").text)
+    thd = conversor(i)
     datos["Discos duros"][cont] = thd
     cont += 1
 
