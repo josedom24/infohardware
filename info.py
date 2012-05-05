@@ -79,11 +79,11 @@ for i in info:
     cont += 1
 
 #NET
-info = arbol.xpath("//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth')]]")
+info = arbol.xpath("//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]]")
 datos["Interfaces de red"] = {}
 cont = 1
 for i in info:
-    datos["Interfaces de red"][cont] = i.find("serial").text
+    datos["Interfaces de red"][cont] = i.find("serial").text    
     cont += 1
 
 print datos
