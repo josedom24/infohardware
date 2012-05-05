@@ -81,6 +81,7 @@ for i in info:
 #NET
 info = arbol.xpath("//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]]")
 datos["Interfaces de red"] = {}
+datos["MAC"] = {}
 cont = 1
 for i in info:
     datos["Interfaces de red"][cont] = i.find("product").text    
