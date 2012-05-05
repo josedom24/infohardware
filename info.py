@@ -43,7 +43,7 @@ arbol = etree.parse ("/tmp/sys.xml")
 
 #Num serie
 ns = raw_input("Número de serie: ")
-datos["Número de serie"] = ns
+datos["NS"] = ns
 
 # Placa base
 info = arbol.xpath("/node/node[description='Motherboard']")
