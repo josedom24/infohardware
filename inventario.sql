@@ -11,7 +11,7 @@ USE `inventario` ;
 CREATE  TABLE IF NOT EXISTS `inventario`.`cpu` (
   `idcpu` INT NOT NULL AUTO_INCREMENT ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `slot` VARCHAR(45) NULL ,
   PRIMARY KEY (`idcpu`) )
 ENGINE = InnoDB
@@ -23,7 +23,7 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `inventario`.`equipo` (
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `cpu_idcpu` INT NOT NULL ,
   `num_serie` VARCHAR(45) NOT NULL ,
   PRIMARY KEY (`num_serie`) ,
@@ -62,7 +62,7 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `inventario`.`hd` (
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `description` VARCHAR(45) NULL DEFAULT 'ATA Disk' ,
   `size` VARCHAR(45) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
@@ -84,7 +84,7 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `inventario`.`cd` (
   `idcd` INT NOT NULL AUTO_INCREMENT ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   PRIMARY KEY (`idcd`) ,
   INDEX `fk_cd_equipo1` (`equipo_num_serie` ASC) ,
@@ -102,7 +102,7 @@ DEFAULT CHARACTER SET = utf8;
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `inventario`.`red` (
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `mac` VARCHAR(45) NOT NULL ,
   PRIMARY KEY (`mac`) ,

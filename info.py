@@ -3,7 +3,7 @@ import os
 import MySQLdb
 from lxml import etree
 
-db = MySQLdb.connect(user='root',passwd='asdasd',db='inventario')
+db = MySQLdb.connect(user='root',passwd='root',db='inventario')
 cursor = db.cursor()
 
 def buscar_n_serie(num):
@@ -19,14 +19,15 @@ def buscar_componente(respuesta):
     sql = "SELECT %s FROM %s WHERE %s = '%s'" % (respuesta,tabla,columnas[0],seleccion)
     for i in columnas[1:]:
         seleccion = arbol.xpath("%s/%s/text()" % (ruta,i))[0]
-        sql = sql + "AND %s = '%s'" % (i,seleccion)
+        sql = sql + " AND %s = '%s'" % (i,seleccion)
 
-    cursor.execute(sql)
+    tuplas = cursor.execute(sql)
 
-    asd = cursor.fetchone()[0]
-
-    if asd != None:
+    if tuplas > 0:
+        asd = cursor.fetchone()[0]
         return asd
+    else:
+        return tuplas
         
 def insertar_componente():
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
@@ -64,7 +65,7 @@ ruta = "/node/node/node[description='CPU'][product]"
 tabla = "cpu"
 columnas = ["vendor","product","slot"]
 
-if buscar_componente("idcpu") != None:
+if buscar_componente("idcpu") != 0:
     print "La CPU ya está en la base de datos"
 else:
     insertar_componente()
