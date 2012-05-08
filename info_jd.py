@@ -42,27 +42,33 @@ def buscar_componente(respuesta):
 def insertar_componente():
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
-        sql = "INSERT INTO %s(%s" % (tabla,columnas[i])
+        sql = "INSERT INTO %s(%s" % (tabla,columnas[0])
         for j in columnas[1:]:
             sql = sql + ",%s" % j
         try:
-            valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
+            #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
+            valor = arbol.xpath("%s/%s/text()" % (ruta,columnas[0]))[i]
+            
+            print valor
         except:
         #Si hemos indicado un valor para esa columna en el array valores se toma ese
-            valor=valores[0]
+            if valores[0]!="": 
+                valor=valores[0]
         sql = sql + ") VALUES ('%s'" % valor
         cont=1
         for j in columnas[1:]:
             try:
-                valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+                #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+                valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
             except:
-                valor=valores[cont]
+                if valores[cont]!="": 
+                    valor=valores[cont]
             cont=cont+1
             sql = sql + ",'%s'" % valor
             
-    sql = sql + ")"
-    print sql
-    cursor.execute(sql)
+        sql = sql + ")"
+        print sql
+        cursor.execute(sql)
 
 def actualizar_componente():
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
@@ -71,24 +77,28 @@ def actualizar_componente():
             valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
         except:
         #Si hemos indicado un valor para esa columna en el array valores se toma ese
-            valor=valores[0]
-        sql = "UPDATE %s SET %s='%s'" % (tabla,columnas[i],valor)
+            if valores[0]!="":
+                valor=valores[0]
+        sql = "UPDATE %s SET %s='%s'" % (tabla,columnas[0],valor)
 
         cont=1
         for j in columnas[1:]:
             try:
-                valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+                #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+                valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
+                
             except:
-                valor=valores[cont]
+                if valores[cont]!="":
+                    valor=valores[cont]
             cont=cont+1
             sql = sql + ",%s='%s'" % (j,valor)
     
-    sql = sql + " WHERE "
-    for key in condiciones:
-        sql=sql+"%s='%s'," % (key,condiciones[key])
-    sql=sql[0:-1]
-    print sql
-    cursor.execute(sql)
+        sql = sql + " WHERE "
+        for key in condiciones:
+            sql=sql+"%s='%s'," % (key,condiciones[key])
+        sql=sql[0:-1]
+        print sql
+        cursor.execute(sql)
 
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
@@ -145,20 +155,23 @@ else:
     #No existe el equipo, lo insertamos
     insertar_componente()
     
-# info = arbol.xpath("/node/node[description='Motherboard']")
-# for i in info:
-#     datos["Placa base"] = "%s %s" % (i.find("vendor").text,i.find("product").text)
+# Memoria RAM
+ruta = "/node/node/node[description='System Memory']/node[size]"
+tabla = "ram"
+columnas = ["equipo_num_serie"]
+valores = [ns]
+rambd=buscar_componente("idram")
+if rambd!=0:
+    for r in rambd:
+        condiciones={"idram":r}
+        print condiciones
+        #borrar_componente()
+columnas = ["size","clock","equipo_num_serie"]
+valores = ["","",ns]
+insertar_componente()
 
-# #CPU y socket
-# info = arbol.xpath("/node/node/node[description='CPU']")
-# datos["Procesadores"] = {}
-# cont = 1
-# for i in info:
-#     if i.find("vendor").text != "Null":
-#         datos["Procesadores"][cont] = "%s %s" % (i.find("product").text,i.find("slot").text)
-#     cont += 1
+#insertar_componente()
 
-# # Memoria RAM
 # # info = arbol.xpath("/node/node/node[description='System Memory']/node[size]")
 # # datos["Memoria"] = {}
 # # cont = 1
