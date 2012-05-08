@@ -6,6 +6,15 @@ from lxml import etree
 db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
 cursor = db.cursor()
 
+def conversor(cant):
+    unit = ['MB','GB']
+    aux=int(cant)/(1024*1024)
+    if aux > 1024:
+        aux = "%s %s" % (str(aux/1024),unit[1])
+    else:
+        aux=str(tmem)+unit[0]
+    return aux
+
 def buscar_n_serie(num):
     sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % num
     cursor.execute(sql)
@@ -54,6 +63,10 @@ def insertar_componente():
         #Si hemos indicado un valor para esa columna en el array valores se toma ese
             if valores[0]!="": 
                 valor=valores[0]
+        if columnas[0]=="size":
+            valor=conversor(valor)
+        if columnas[0]=="clock":
+             valor="%d MHz" % (int(valor)/1000000)
         sql = sql + ") VALUES ('%s'" % valor
         cont=1
         for j in columnas[1:]:
@@ -64,6 +77,10 @@ def insertar_componente():
                 if valores[cont]!="": 
                     valor=valores[cont]
             cont=cont+1
+            if j=="size":
+                    valor=conversor(valor)
+            if j=="clock":
+                valor="%d MHz" % (int(valor)/1000000)
             sql = sql + ",'%s'" % valor
             
         sql = sql + ")"
@@ -91,6 +108,10 @@ def actualizar_componente():
                 if valores[cont]!="":
                     valor=valores[cont]
             cont=cont+1
+            if j=="size":
+                    valor=conversor(valor)
+            if j=="clock":
+                valor="%d MHz" % (int(valor)/1000000)
             sql = sql + ",%s='%s'" % (j,valor)
     
         sql = sql + " WHERE "
