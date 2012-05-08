@@ -136,14 +136,15 @@ if buscar_n_serie(ns):
      productbd=buscar_componente("product")
      if vendorbd==0 or productbd==0:
          print "Se ha encontrado una nueva placa base"
+         columnas = ["vendor","producto"]
+         valores = ["",""]
+         condiciones = {"num_serie":ns}
          actualizar_componente()
 
 else:
     #No existe el equipo, lo insertamos
     insertar_componente()
     
-    
-
 # info = arbol.xpath("/node/node[description='Motherboard']")
 # for i in info:
 #     datos["Placa base"] = "%s %s" % (i.find("vendor").text,i.find("product").text)
