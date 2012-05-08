@@ -36,10 +36,19 @@ def insertar_componente():
         sql = "INSERT INTO %s(%s" % (tabla,columnas[i])
         for j in columnas[1:]:
             sql = sql + ",%s" % j
-        valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
+        try:
+            valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
+        except:
+        #Si hemos indicado un valor para esa columna en el array valores se toma ese
+            valor=valores[0]
         sql = sql + ") VALUES ('%s'" % valor
+        cont=1
         for j in columnas[1:]:
-            valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+            try:
+                valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+            except:
+                valor=valores[cont]
+            cont=cont+1
             sql = sql + ",'%s'" % valor
             
     sql = sql + ")"
@@ -47,33 +56,42 @@ def insertar_componente():
     cursor.execute(sql)
 
 os.system("lshw -xml>/tmp/sys.xml")
-arbol = etree.parse ("sys.xml")
+arbol = etree.parse ("/tmp/sys.xml")
 
 #Num serie
 ns = raw_input("Número de serie: ")
-#datos["NS"] = ns
 
-# Comprobamos si el equipo está en la base de datos
-sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % ns
-cursor.execute(sql)
-if cursor.fetchone() == ns:
-    print "El equipo ya está en la base de datos"
-#else:
-#    insertar_equipo()
 
 #CPU
 ruta = "/node/node/node[description='CPU'][product]"
 tabla = "cpu"
 columnas = ["vendor","product","slot"]
 
-if buscar_componente("idcpu") != 0:
+idcpu=buscar_componente("idcpu")
+if idcpu!= 0:
     print "La CPU ya está en la base de datos"
 else:
     insertar_componente()
     idcpu = buscar_componente("idcpu")
-    print idcpu
+    print "Se ha incertado una nueva CPU %d" % idcpu
 
-# # Placa base
+
+
+# Placa base
+
+ruta = "/node/node[description='Motherboard']"
+tabla = "equipo"
+columnas = ["vendor","product","cpu_idcpu","num_serie"]
+valores = ["","",idcpu,ns]
+
+if buscar_n_serie(ns):
+     # Ya existe el equipo, comprobamos que tenga la misma CPU
+    print ""
+else:
+    insertar_componente()
+    
+    
+
 # info = arbol.xpath("/node/node[description='Motherboard']")
 # for i in info:
 #     datos["Placa base"] = "%s %s" % (i.find("vendor").text,i.find("product").text)
