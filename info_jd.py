@@ -15,12 +15,21 @@ def buscar_n_serie(num):
         return False
 
 def buscar_componente(respuesta):
-    seleccion = arbol.xpath("%s/%s/text()" % (ruta,columnas[0]))[0]
-    sql = "SELECT %s FROM %s WHERE %s = '%s'" % (respuesta,tabla,columnas[0],seleccion)
-    for i in columnas[1:]:
-        seleccion = arbol.xpath("%s/%s/text()" % (ruta,i))[0]
-        sql = sql + " AND %s = '%s'" % (i,seleccion)
+    try:
+        seleccion = arbol.xpath("%s/%s/text()" % (ruta,columnas[0]))[0]
+    except:
+        seleccion=valores[0]
 
+    sql = "SELECT %s FROM %s WHERE %s = '%s'" % (respuesta,tabla,columnas[0],seleccion)
+    cont=1
+    for i in columnas[1:]:
+        try:
+            seleccion = arbol.xpath("%s/%s/text()" % (ruta,i))[0]
+        except:
+            seleccion = valores[cont]
+        cont=cont+1
+        sql = sql + " AND %s = '%s'" % (i,seleccion)
+    print sql
     tuplas = cursor.execute(sql)
 
     if tuplas > 0:
@@ -52,10 +61,36 @@ def insertar_componente():
             sql = sql + ",'%s'" % valor
             
     sql = sql + ")"
-
+    print sql
     cursor.execute(sql)
 
-os.system("lshw -xml>/tmp/sys.xml")
+def actualizar_componente():
+    num_componentes = int(arbol.xpath('count(%s)' % ruta))
+    for i in xrange(num_componentes):
+        try:
+            valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
+        except:
+        #Si hemos indicado un valor para esa columna en el array valores se toma ese
+            valor=valores[0]
+        sql = "UPDATE %s SET %s='%s'" % (tabla,columnas[i],valor)
+
+        cont=1
+        for j in columnas[1:]:
+            try:
+                valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
+            except:
+                valor=valores[cont]
+            cont=cont+1
+            sql = sql + ",%s='%s'" % (j,valor)
+    
+    sql = sql + " WHERE "
+    for key in condiciones:
+        sql=sql+"%s='%s'," % (key,condiciones[key])
+    sql=sql[0:-1]
+    print sql
+    cursor.execute(sql)
+
+#os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 #Num serie
@@ -86,8 +121,25 @@ valores = ["","",idcpu,ns]
 
 if buscar_n_serie(ns):
      # Ya existe el equipo, comprobamos que tenga la misma CPU
-    print ""
+     cpubd=buscar_componente("cpu_idcpu")
+     # Si las CPU son distintas se tiene que actualizar el equipo
+     if cpubd!=idcpu:
+         print ""
+         columnas = ["cpu_idcpu"]
+         valores = [idcpu]
+         condiciones = {"num_serie":ns}
+         actualizar_componente()
+     # Ahora comprobamos si ha cambiado la placa base
+     columnas = ["vendor","product","cpu_idcpu","num_serie"]
+     valores = ["","",idcpu,ns]
+     vendorbd=buscar_componente("vendor")
+     productbd=buscar_componente("product")
+     if vendorbd==0 or productbd==0:
+         print "Se ha encontrado una nueva placa base"
+         actualizar_componente()
+
 else:
+    #No existe el equipo, lo insertamos
     insertar_componente()
     
     
