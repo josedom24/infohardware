@@ -3,7 +3,7 @@ import os
 import MySQLdb
 from lxml import etree
 
-db = MySQLdb.connect(user='root',passwd='root',db='inventario')
+db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
 cursor = db.cursor()
 
 def buscar_n_serie(num):
@@ -27,6 +27,7 @@ def buscar_componente(respuesta):
         asd = cursor.fetchone()[0]
         return asd
     else:
+
         return tuplas
         
 def insertar_componente():
@@ -45,7 +46,7 @@ def insertar_componente():
 
     cursor.execute(sql)
 
-#os.system("lshw -xml>/tmp/sys.xml")
+os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("sys.xml")
 
 #Num serie
