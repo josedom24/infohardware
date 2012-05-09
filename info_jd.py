@@ -6,13 +6,17 @@ from lxml import etree
 db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
 cursor = db.cursor()
 
-def conversor(cant):
-    unit = ['MB','GB']
-    aux=int(cant)/(1024*1024)
-    if aux > 1024:
-        aux = "%s %s" % (str(aux/1024),unit[1])
-    else:
-        aux=str(tmem)+unit[0]
+def conversor(cant,columna):
+    aux=cant
+    if columna=="size":
+        unit = ['MB','GB']
+        aux=int(cant)/(1024*1024)
+        if aux > 1024:
+            aux = "%s %s" % (str(aux/1024),unit[1])
+        else:
+            aux=str(tmem)+unit[0]
+    if columna=="clock":
+        aux="%d MHz" % (int(cant)/1000000)
     return aux
 
 def buscar_n_serie(num):
@@ -24,20 +28,16 @@ def buscar_n_serie(num):
         return False
 
 def buscar_componente(respuesta):
-    try:
-        seleccion = arbol.xpath("%s/%s/text()" % (ruta,columnas[0]))[0]
-    except:
-        seleccion=valores[0]
-
-    sql = "SELECT %s FROM %s WHERE %s = '%s'" % (respuesta,tabla,columnas[0],seleccion)
-    cont=1
-    for i in columnas[1:]:
+    sql = "SELECT %s FROM %s WHERE " % (respuesta,tabla)
+    cont=0
+    for i in columnas:
         try:
             seleccion = arbol.xpath("%s/%s/text()" % (ruta,i))[0]
         except:
             seleccion = valores[cont]
         cont=cont+1
-        sql = sql + " AND %s = '%s'" % (i,seleccion)
+        sql = sql + "%s = '%s' AND " % (i,seleccion)
+    sql=sql[0:-4]
     print sql
     cursor.execute(sql)
     tuplas=cursor.fetchall()
@@ -62,10 +62,7 @@ def insertar_componente():
                 if valores[cont]!="": 
                     valor=valores[cont]
             cont=cont+1
-            if j=="size":
-                    valor=conversor(valor)
-            if j=="clock":
-                valor="%d MHz" % (int(valor)/1000000)
+            valor=conversor(valor,j)
             sql = sql + "'%s'," % valor
         sql=sql[0:-1]    
         sql = sql + ")"
@@ -84,10 +81,7 @@ def actualizar_componente():
                 if valores[cont]!="":
                     valor=valores[cont]
             cont=cont+1
-            if j=="size":
-                    valor=conversor(valor)
-            if j=="clock":
-                valor="%d MHz" % (int(valor)/1000000)
+            valor=conversor(valor,j)
             sql = sql + ",%s='%s'" % (j,valor)
     
         sql = sql + " WHERE "
@@ -115,10 +109,6 @@ if idcpu!= 0:
     print "La CPU ya está en la base de datos"
 else:
     insertar_componente()
-    idcpu = buscar_componente("idcpu")
-    print "Se ha incertado una nueva CPU %d" % idcpu
-
-
 
 # Placa base
 
