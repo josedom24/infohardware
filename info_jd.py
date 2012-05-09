@@ -39,9 +39,11 @@ def buscar_componente(respuesta):
         cont=cont+1
         sql = sql + " AND %s = '%s'" % (i,seleccion)
     print sql
-    tuplas = cursor.execute(sql)
-
+    cursor.execute(sql)
+    tuplas=cursor.fetchall()
+    print tuplas
     if tuplas > 0:
+        cursor.execute(sql)
         asd = cursor.fetchone()[0]
         return asd
     else:
@@ -185,7 +187,6 @@ rambd=buscar_componente("idram")
 if rambd!=0:
     for r in rambd:
         condiciones={"idram":r}
-        print condiciones
         #borrar_componente()
 columnas = ["size","clock","equipo_num_serie"]
 valores = ["","",ns]
