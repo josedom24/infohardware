@@ -19,6 +19,22 @@ def conversor(cant,columna):
         aux="%d MHz" % (int(cant)/1000000)
     return aux
 
+def obtener_datos(arbol,ruta,datos,adicionales=None):
+    respuesta =[]
+    num_componentes = int(arbol.xpath('count(%s)' % ruta))
+    for i in xrange(num_componentes):
+        intermedio={}
+        cont_adicionales=0;
+        for dato in datos:
+            try:
+                valor = arbol.xpath("%s/%s/text()" % (ruta,dato))[i]
+            except:
+                valor=adicionales[cont_adicionales]
+                cont_adicionales+=1
+            intermedio[dato]=valor;
+        respuesta.append(intermedio)
+    return respuesta
+
 def buscar_n_serie(num):
     sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % num
     cursor.execute(sql)
@@ -27,43 +43,33 @@ def buscar_n_serie(num):
     else:
         return False
 
-def buscar_componente(respuesta):
+def buscar_componente(respuesta,tabla,datos):
+    print datos
     sql = "SELECT %s FROM %s WHERE " % (respuesta,tabla)
-    cont=0
-    for i in columnas:
-        try:
-            seleccion = arbol.xpath("%s/%s/text()" % (ruta,i))[0]
-        except:
-            seleccion = valores[cont]
-        cont=cont+1
-        sql = sql + "%s = '%s' AND " % (i,seleccion)
+    
+    for k in datos[0].keys():
+        sql = sql + "%s = '%s' AND " % (k,datos[0][k])
     sql=sql[0:-4]
     print sql
     cursor.execute(sql)
     tuplas=cursor.fetchall()
+    if len(tuplas)==0:
+        return 0
     if len(tuplas)==1:
         return tuplas[0][0]
     else:
         return tuplas
         
-def insertar_componente():
-    num_componentes = int(arbol.xpath('count(%s)' % ruta))
+def insertar_componente(tabla, datos):
+    num_componentes = len(datos);
     for i in xrange(num_componentes):
         sql = "INSERT INTO %s(" % tabla
-        for j in columnas:
+        for j in datos[i].keys():
             sql = sql + "%s," % j
         sql=sql[0:-1]
         sql = sql + ") VALUES ("
-        cont=0
-        for j in columnas:
-            try:
-                valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
-            except:
-                if valores[cont]!="": 
-                    valor=valores[cont]
-            cont=cont+1
-            valor=conversor(valor,j)
-            sql = sql + "'%s'," % valor
+        for j in datos[i].keys():
+            sql = sql + "'%s'," % conversor(datos[i][j],j)
         sql=sql[0:-1]    
         sql = sql + ")"
         print sql
@@ -95,20 +101,21 @@ def actualizar_componente():
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
+
+
 #Num serie
 ns = raw_input("Número de serie: ")
 
 
 #CPU
 ruta = "/node/node/node[description='CPU'][product]"
-tabla = "cpu"
 columnas = ["vendor","product","slot"]
-
-idcpu=buscar_componente("idcpu")
+datos=obtener_datos(arbol,ruta,columnas);
+idcpu=buscar_componente("idcpu","cpu",datos)
 if idcpu!= 0:
     print "La CPU ya está en la base de datos"
 else:
-    insertar_componente()
+    insertar_componente("cpu",datos)
 
 # Placa base
 
@@ -116,6 +123,8 @@ ruta = "/node/node[description='Motherboard']"
 tabla = "equipo"
 columnas = ["vendor","product","cpu_idcpu","num_serie"]
 valores = ["","",idcpu,ns]
+
+obtener_datos(arbol,ruta,columnas,[idcpu,ns])
 
 if buscar_n_serie(ns):
      # Ya existe el equipo, comprobamos que tenga la misma CPU
