@@ -49,27 +49,14 @@ def buscar_componente(respuesta):
 def insertar_componente():
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
-        sql = "INSERT INTO %s(%s" % (tabla,columnas[0])
-        for j in columnas[1:]:
-            sql = sql + ",%s" % j
-        try:
-            #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
-            valor = arbol.xpath("%s/%s/text()" % (ruta,columnas[0]))[i]
-            
-            print valor
-        except:
-        #Si hemos indicado un valor para esa columna en el array valores se toma ese
-            if valores[0]!="": 
-                valor=valores[0]
-        if columnas[0]=="size":
-            valor=conversor(valor)
-        if columnas[0]=="clock":
-             valor="%d MHz" % (int(valor)/1000000)
-        sql = sql + ") VALUES ('%s'" % valor
-        cont=1
-        for j in columnas[1:]:
+        sql = "INSERT INTO %s(" % tabla
+        for j in columnas:
+            sql = sql + "%s," % j
+        sql=sql[0:-1]
+        sql = sql + ") VALUES ("
+        cont=0
+        for j in columnas:
             try:
-                #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
                 valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
             except:
                 if valores[cont]!="": 
@@ -79,8 +66,8 @@ def insertar_componente():
                     valor=conversor(valor)
             if j=="clock":
                 valor="%d MHz" % (int(valor)/1000000)
-            sql = sql + ",'%s'" % valor
-            
+            sql = sql + "'%s'," % valor
+        sql=sql[0:-1]    
         sql = sql + ")"
         print sql
         cursor.execute(sql)
@@ -88,20 +75,11 @@ def insertar_componente():
 def actualizar_componente():
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
-        try:
-            valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,columnas[0],i+1))[0]
-        except:
-        #Si hemos indicado un valor para esa columna en el array valores se toma ese
-            if valores[0]!="":
-                valor=valores[0]
-        sql = "UPDATE %s SET %s='%s'" % (tabla,columnas[0],valor)
-
-        cont=1
-        for j in columnas[1:]:
+        sql = "UPDATE %s SET "
+        cont=0
+        for j in columnas:
             try:
-                #valor = arbol.xpath("%s/%s[%d]/text()" % (ruta,j,i+1))[0]
                 valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
-                
             except:
                 if valores[cont]!="":
                     valor=valores[cont]
@@ -120,12 +98,10 @@ def actualizar_componente():
         cursor.execute(sql)
 
 
-os.system("lshw -xml>/tmp/sys.xml")
+#os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 #Num serie
-
-
 ns = raw_input("Número de serie: ")
 
 
