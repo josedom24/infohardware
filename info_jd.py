@@ -6,6 +6,7 @@ from lxml import etree
 db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
 cursor = db.cursor()
 
+
 def conversor(cant,columna):
     aux=cant
     if columna=="size":
@@ -29,11 +30,22 @@ def obtener_datos(arbol,ruta,datos,adicionales=None):
             try:
                 valor = arbol.xpath("%s/%s/text()" % (ruta,dato))[i]
             except:
-                valor=adicionales[cont_adicionales]
+                if adicionales!=None:
+                       valor=adicionales[cont_adicionales]
                 cont_adicionales+=1
             intermedio[dato]=valor;
         respuesta.append(intermedio)
     return respuesta
+
+def strdatos(datos):
+    txt=""
+    num_componentes = len(datos);
+    for i in xrange(num_componentes):
+        for j in datos[i].keys():
+            txt+=str(datos[i][j])+" - "
+        txt=txt[0:-3]
+        txt+="\n"
+    return txt
 
 def buscar_n_serie(num):
     sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % num
@@ -44,13 +56,12 @@ def buscar_n_serie(num):
         return False
 
 def buscar_componente(respuesta,tabla,datos):
-    print datos
+    
     sql = "SELECT %s FROM %s WHERE " % (respuesta,tabla)
     
     for k in datos[0].keys():
         sql = sql + "%s = '%s' AND " % (k,datos[0][k])
     sql=sql[0:-4]
-    print sql
     cursor.execute(sql)
     tuplas=cursor.fetchall()
     if len(tuplas)==0:
@@ -72,39 +83,34 @@ def insertar_componente(tabla, datos):
             sql = sql + "'%s'," % conversor(datos[i][j],j)
         sql=sql[0:-1]    
         sql = sql + ")"
-        print sql
         cursor.execute(sql)
 
-def actualizar_componente():
+def actualizar_componente(tabla,datos,condiciones):
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
-        sql = "UPDATE %s SET "
+        sql = "UPDATE %s SET " % tabla
         cont=0
-        for j in columnas:
-            try:
-                valor = arbol.xpath("%s/%s/text()" % (ruta,j))[i]
-            except:
-                if valores[cont]!="":
-                    valor=valores[cont]
-            cont=cont+1
-            valor=conversor(valor,j)
-            sql = sql + ",%s='%s'" % (j,valor)
-    
+        for j in datos[i].keys():
+             sql = sql + "%s='%s'," % (j,conversor(datos[i][j],j))
+        sql=sql[0:-1]
         sql = sql + " WHERE "
         for key in condiciones:
             sql=sql+"%s='%s'," % (key,condiciones[key])
         sql=sql[0:-1]
-        print sql
         cursor.execute(sql)
 
 
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
-
-
+texto=""
+texto+="INVENTARIO - IESGN\n\n"
 
 #Num serie
 ns = raw_input("Número de serie: ")
+if buscar_n_serie(ns):
+    texto+="Equipo ya enventariado.\n"
+else:
+    texto+="Equipo nuevo.\n"
 
 
 #CPU
@@ -112,60 +118,83 @@ ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
-if idcpu!= 0:
-    print "La CPU ya está en la base de datos"
-else:
+
+if idcpu==0:
+   
     insertar_componente("cpu",datos)
+    idcpu=buscar_componente("idcpu","cpu",datos)
+
+tcpu=strdatos(datos)
+
 
 # Placa base
 
 ruta = "/node/node[description='Motherboard']"
-tabla = "equipo"
 columnas = ["vendor","product","cpu_idcpu","num_serie"]
-valores = ["","",idcpu,ns]
-
-obtener_datos(arbol,ruta,columnas,[idcpu,ns])
+datos=obtener_datos(arbol,ruta,columnas,[idcpu,ns])
 
 if buscar_n_serie(ns):
      # Ya existe el equipo, comprobamos que tenga la misma CPU
-     cpubd=buscar_componente("cpu_idcpu")
+     cpubd=buscar_componente("cpu_idcpu","equipo",datos)
      # Si las CPU son distintas se tiene que actualizar el equipo
      if cpubd!=idcpu:
-         print ""
-         columnas = ["cpu_idcpu"]
-         valores = [idcpu]
+         # Obtenemos CPU actual
+         rutacpu = "/node/node/node[description='CPU'][product]"
+         columnascpu = ["vendor","product","slot"]
+         datoscpu=obtener_datos(arbol,rutacpu,columnascpu)
+         newcpu=strdatos(datoscpu)
+         texto+="CPU nueva:"+newcpu+"\n"
+         # Obtenemos la CPU antigua
+         sql="select * from cpu,equipo where cpu_idcpu=idcpu and num_serie='%s'" % ns
+         cursor.execute(sql)
+         row=cursor.fetchone()
+         texto+="CPU antigua:%s - %s - %s\n" % (row[1],row[2],row[3])
+         #Actualizamos el quipo con la nueva CPU
+         datoscpu=[{"cpu_idcpu":idcpu}]
          condiciones = {"num_serie":ns}
-         actualizar_componente()
+         actualizar_componente("equipo",datoscpu,condiciones)
      # Ahora comprobamos si ha cambiado la placa base
-     columnas = ["vendor","product","cpu_idcpu","num_serie"]
-     valores = ["","",idcpu,ns]
-     vendorbd=buscar_componente("vendor")
-     productbd=buscar_componente("product")
+     vendorbd=buscar_componente("vendor","equipo",datos)
+     productbd=buscar_componente("product","equipo",datos)
      if vendorbd==0 or productbd==0:
-         print "Se ha encontrado una nueva placa base"
-         columnas = ["vendor","producto"]
-         valores = ["",""]
+         texto+="Se ha encontrado una nueva placa base\n"
+         columnas = ["vendor","product"]
+         datos=obtener_datos(arbol,ruta,columnas)
          condiciones = {"num_serie":ns}
-         actualizar_componente()
+         # Obtenemos la MB actual
+         newplaca=strdatos(datos);
+         texto+="Placa Base nueva:"+newplaca+"\n"
+         # Obtenemos la MB antigua
+         sql="select * from equipo where num_serie='%s'" % ns
+         cursor.execute(sql)
+         row=cursor.fetchone()
+         texto+="CPU antigua:%s - %s\n" % (row[0],row[1])
+         # Actualizamos la placa base
+         actualizar_componente("equipo",datos,condiciones)
+         
 
 else:
     #No existe el equipo, lo insertamos
-    insertar_componente()
+    texto+="CPU\n###\n\n"
+    texto+="CPU:"+tcpu+"\n"
+    texto+="Placa base\n##########\n\n"
+    texto+="Placa Base:"+strdatos(datos)+"\n"
+    insertar_componente("equipo",datos)
     
 # Memoria RAM
-ruta = "/node/node/node[description='System Memory']/node[size]"
-tabla = "ram"
-columnas = ["equipo_num_serie"]
-valores = [ns]
-rambd=buscar_componente("idram")
-if rambd!=0:
-    for r in rambd:
-        condiciones={"idram":r[0]}
-        print r[0]
-        #borrar_componente()
-columnas = ["size","clock","equipo_num_serie"]
-valores = ["","",ns]
-insertar_componente()
+#ruta = "/node/node/node[description='System Memory']/node[size]"
+#tabla = "ram"
+#columnas = ["equipo_num_serie"]
+#valores = [ns]
+#rambd=buscar_componente("idram")
+#if rambd!=0:
+#    for r in rambd:
+#        condiciones={"idram":r[0]}
+#        print r[0]
+#        #borrar_componente()
+#columnas = ["size","clock","equipo_num_serie"]
+#valores = ["","",ns]
+#insertar_componente()
 
 #insertar_componente()
 
@@ -201,3 +230,4 @@ insertar_componente()
 # #createinsert(lista,params)
 
 db.commit()
+print texto
