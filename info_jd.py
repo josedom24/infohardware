@@ -41,13 +41,9 @@ def buscar_componente(respuesta):
     print sql
     cursor.execute(sql)
     tuplas=cursor.fetchall()
-    print tuplas
-    if tuplas > 0:
-        cursor.execute(sql)
-        asd = cursor.fetchone()[0]
-        return asd
+    if len(tuplas)==1:
+        return tuplas[0][0]
     else:
-
         return tuplas
         
 def insertar_componente():
@@ -123,10 +119,13 @@ def actualizar_componente():
         print sql
         cursor.execute(sql)
 
-#os.system("lshw -xml>/tmp/sys.xml")
+
+os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 #Num serie
+
+
 ns = raw_input("Número de serie: ")
 
 
@@ -186,7 +185,8 @@ valores = [ns]
 rambd=buscar_componente("idram")
 if rambd!=0:
     for r in rambd:
-        condiciones={"idram":r}
+        condiciones={"idram":r[0]}
+        print r[0]
         #borrar_componente()
 columnas = ["size","clock","equipo_num_serie"]
 valores = ["","",ns]
