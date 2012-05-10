@@ -37,16 +37,6 @@ def obtener_datos(arbol,ruta,datos,adicionales=None):
         respuesta.append(intermedio)
     return respuesta
 
-def strdatos(datos):
-    txt=""
-    num_componentes = len(datos);
-    for i in xrange(num_componentes):
-        for j in datos[i].keys():
-            if j.find("id")<0 and j!="num_serie":
-                   txt+=str(datos[i][j])+" - "
-        txt=txt[0:-3]
-        txt+="\n"
-    return txt
 
 def buscar_n_serie(num):
     sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % num
@@ -87,7 +77,7 @@ def insertar_componente(tabla, datos):
         cursor.execute(sql)
 
 def actualizar_componente(tabla,datos,condiciones):
-    num_componentes = int(arbol.xpath('count(%s)' % ruta))
+    num_componentes = len(datos)
     for i in xrange(num_componentes):
         sql = "UPDATE %s SET " % tabla
         cont=0
@@ -100,18 +90,27 @@ def actualizar_componente(tabla,datos,condiciones):
         sql=sql[0:-1]
         cursor.execute(sql)
 
+def borrar_componente(tabla,condiciones):
+    sql = "DELETE FROM %s WHERE " % tabla
+    for key in condiciones:
+            sql=sql+"%s='%s'," % (key,condiciones[key])
+    sql=sql[0:-1]
+    cursor.execute(sql)
+
+def leer_equipo(ns):
+    return true
+
 
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
-texto=""
-texto+="INVENTARIO - IESGN\n"
+
 
 #Num serie
 ns = raw_input("Número de serie: ")
+oldequipo=""
 if buscar_n_serie(ns):
-    texto+="Equipo ya enventariado.\n"
-else:
-    texto+="Equipo nuevo.\n"
+    oldequipo=leer_equipo(ns)
+
 
 
 #CPU
@@ -121,11 +120,8 @@ datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
 
 if idcpu==0:
-   
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
-
-tcpu=strdatos(datos)
 
 
 # Placa base
@@ -139,17 +135,6 @@ if buscar_n_serie(ns):
      cpubd=buscar_componente("cpu_idcpu","equipo",datos)
      # Si las CPU son distintas se tiene que actualizar el equipo
      if cpubd!=idcpu:
-         # Obtenemos CPU actual
-         rutacpu = "/node/node/node[description='CPU'][product]"
-         columnascpu = ["vendor","product","slot"]
-         datoscpu=obtener_datos(arbol,rutacpu,columnascpu)
-         newcpu=strdatos(datoscpu)
-         texto+="CPU nueva:\n"+newcpu
-         # Obtenemos la CPU antigua
-         sql="select * from cpu,equipo where cpu_idcpu=idcpu and num_serie='%s'" % ns
-         cursor.execute(sql)
-         row=cursor.fetchone()
-         texto+="CPU antigua:\n%s - %s - %s\n" % (row[3],row[2],row[1])
          #Actualizamos el quipo con la nueva CPU
          datoscpu=[{"cpu_idcpu":idcpu}]
          condiciones = {"num_serie":ns}
@@ -158,79 +143,35 @@ if buscar_n_serie(ns):
      vendorbd=buscar_componente("vendor","equipo",datos)
      productbd=buscar_componente("product","equipo",datos)
      if vendorbd==0 or productbd==0:
-         texto+="Se ha encontrado una nueva placa base\n"
          columnas = ["vendor","product"]
          datos=obtener_datos(arbol,ruta,columnas)
-         condiciones = {"num_serie":ns}
-         # Obtenemos la MB actual
-         newplaca=strdatos(datos);
-         texto+="Placa Base nueva:\n"+newplaca+"\n"
-         # Obtenemos la MB antigua
-         sql="select * from equipo where num_serie='%s'" % ns
-         cursor.execute(sql)
-         row=cursor.fetchone()
-         texto+="Placa Base antigua:\n%s - %s\n" % (row[1],row[0])
          # Actualizamos la placa base
          actualizar_componente("equipo",datos,condiciones)
          
 
 else:
     #No existe el equipo, lo insertamos
-    texto+="CPU\n###\n"
-    texto+="CPU:"+tcpu+"\n"
-    texto+="Placa base\n##########\n"
-    texto+="Placa Base:"+strdatos(datos)+"\n"
     insertar_componente("equipo",datos)
+
+# Si el equipo esta ya inventariado: Borramos todos los componenetes guardadoes en la siguiente lista
+if buscar_n_serie(ns):
+    tablas_a_borrar = ["ram","hd","cd","red"]
+    condiciones={"equipo_num_serie":ns}
+    for tabla in tablas_a_borrar:
+         borrar_componente(tabla,condiciones)
     
-# Memoria RAM
-ruta = "/node/node/node[description='System Memory']/node[size]"
-columnas = ["equipo_num_serie"]
-datos=obtener_datos(arbol,ruta,columnas,[ns])
-rambd=buscar_componente("idram,clock,size","ram",datos)
-if rambd!=0:
-    for r in rambd:
-        condiciones={"idram":r[0]}
-        print r
-#        #borrar_componente()
-columnas = ["size","clock","equipo_num_serie"]
-datos=obtener_datos(arbol,ruta,columnas,[ns])
-insertar_componente("ram",datos)
+# Insertamos los restantes componentes
+tablas = ["ram","hd","cd","red"]
+rutas = ["/node/node/node[description='System Memory']/node[size]",
+"//node[@class='disk' and @id='disk' and @handle!='']/size/..",
+"//node[@class='disk' and @id='cdrom' and @handle!='']/..",
+"//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]][@handle!='']"]
+columnas = [["size","clock","equipo_num_serie"],["vendor","product","description","size","serial","equipo_num_serie"],["vendor","product","equipo_num_serie"],["vendor","product","serial","equipo_num_serie"]]
+for i in xrange(len(tablas)):
+    datos=obtener_datos(arbol,rutas[i],columnas[i],[ns])
+    insertar_componente(tablas[i],datos)
 
 
-# # HD
-
-ruta = "//node[@class='disk']/description[contains(text(),'Disk')]/../size"
-columnas = ["equipo_num_serie"]
-datos=obtener_datos(arbol,ruta,columnas,[ns])
-hdbd=buscar_componente("*","hd",datos)
-if hdbd!=0:
-    for r in hdbd:
-        condiciones={"serial":r[0]}
-        print r
-#        #borrar_componente()
-columnas = ["vendor","product","description","size","serial","equipo_num_serie"]
-datos=obtener_datos(arbol,ruta,columnas,[ns])
-insertar_componente("hd",datos)
-# # info = arbol.xpath("//node[@class='disk']/description[contains(text(),'Disk')]/../size/text()")
-# # datos["Discos duros"] = {}
-# # cont = 1
-# # for i in info:
-# #     thd = conversor(i)
-# #     datos["Discos duros"][cont] = thd
-# #     cont += 1
-
-# #NET
-# info = arbol.xpath("//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]]")
-# datos["Interfaces de red"] = {}
-# datos["MAC"] = {}
-# cont = 1
-# for i in info:
-#     datos["Interfaces de red"][cont] = i.find("product").text    
-#     datos["MAC"][cont] = i.find("serial").text    
-#     cont += 1
-
-# print datos
-# #createinsert(lista,params)
 
 db.commit()
-print texto
+
