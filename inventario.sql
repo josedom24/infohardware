@@ -104,8 +104,8 @@ CREATE  TABLE IF NOT EXISTS `inventario`.`red` (
   `vendor` VARCHAR(45) NULL ,
   `product` VARCHAR(70) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
-  `mac` VARCHAR(45) NOT NULL ,
-  PRIMARY KEY (`mac`) ,
+  `serial` VARCHAR(45) NOT NULL ,
+  PRIMARY KEY (`serial`) ,
   INDEX `fk_red_equipo1` (`equipo_num_serie` ASC) ,
   CONSTRAINT `fk_red_equipo1`
     FOREIGN KEY (`equipo_num_serie` )
