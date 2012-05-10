@@ -67,7 +67,7 @@ CREATE  TABLE IF NOT EXISTS `inventario`.`hd` (
   `size` VARCHAR(45) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `serial` VARCHAR(45) NOT NULL ,
-  PRIMARY KEY (`serial`) ,
+  PRIMARY KEY (`serial`,`equipo_num_serie`) ,
   INDEX `fk_hd_equipo1` (`equipo_num_serie` ASC) ,
   CONSTRAINT `fk_hd_equipo1`
     FOREIGN KEY (`equipo_num_serie` )
@@ -105,7 +105,7 @@ CREATE  TABLE IF NOT EXISTS `inventario`.`red` (
   `product` VARCHAR(70) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `serial` VARCHAR(45) NOT NULL ,
-  PRIMARY KEY (`serial`) ,
+  PRIMARY KEY (`serial`,`equipo_num_serie`) ,
   INDEX `fk_red_equipo1` (`equipo_num_serie` ASC) ,
   CONSTRAINT `fk_red_equipo1`
     FOREIGN KEY (`equipo_num_serie` )
