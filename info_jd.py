@@ -42,7 +42,8 @@ def strdatos(datos):
     num_componentes = len(datos);
     for i in xrange(num_componentes):
         for j in datos[i].keys():
-            txt+=str(datos[i][j])+" - "
+            if j.find("id")<0 and j!="num_serie":
+                   txt+=str(datos[i][j])+" - "
         txt=txt[0:-3]
         txt+="\n"
     return txt
@@ -103,7 +104,7 @@ def actualizar_componente(tabla,datos,condiciones):
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 texto=""
-texto+="INVENTARIO - IESGN\n\n"
+texto+="INVENTARIO - IESGN\n"
 
 #Num serie
 ns = raw_input("Número de serie: ")
@@ -143,12 +144,12 @@ if buscar_n_serie(ns):
          columnascpu = ["vendor","product","slot"]
          datoscpu=obtener_datos(arbol,rutacpu,columnascpu)
          newcpu=strdatos(datoscpu)
-         texto+="CPU nueva:"+newcpu+"\n"
+         texto+="CPU nueva:\n"+newcpu
          # Obtenemos la CPU antigua
          sql="select * from cpu,equipo where cpu_idcpu=idcpu and num_serie='%s'" % ns
          cursor.execute(sql)
          row=cursor.fetchone()
-         texto+="CPU antigua:%s - %s - %s\n" % (row[1],row[2],row[3])
+         texto+="CPU antigua:\n%s - %s - %s\n" % (row[3],row[2],row[1])
          #Actualizamos el quipo con la nueva CPU
          datoscpu=[{"cpu_idcpu":idcpu}]
          condiciones = {"num_serie":ns}
@@ -163,51 +164,53 @@ if buscar_n_serie(ns):
          condiciones = {"num_serie":ns}
          # Obtenemos la MB actual
          newplaca=strdatos(datos);
-         texto+="Placa Base nueva:"+newplaca+"\n"
+         texto+="Placa Base nueva:\n"+newplaca+"\n"
          # Obtenemos la MB antigua
          sql="select * from equipo where num_serie='%s'" % ns
          cursor.execute(sql)
          row=cursor.fetchone()
-         texto+="CPU antigua:%s - %s\n" % (row[0],row[1])
+         texto+="Placa Base antigua:\n%s - %s\n" % (row[1],row[0])
          # Actualizamos la placa base
          actualizar_componente("equipo",datos,condiciones)
          
 
 else:
     #No existe el equipo, lo insertamos
-    texto+="CPU\n###\n\n"
+    texto+="CPU\n###\n"
     texto+="CPU:"+tcpu+"\n"
-    texto+="Placa base\n##########\n\n"
+    texto+="Placa base\n##########\n"
     texto+="Placa Base:"+strdatos(datos)+"\n"
     insertar_componente("equipo",datos)
     
 # Memoria RAM
-#ruta = "/node/node/node[description='System Memory']/node[size]"
-#tabla = "ram"
-#columnas = ["equipo_num_serie"]
-#valores = [ns]
-#rambd=buscar_componente("idram")
-#if rambd!=0:
-#    for r in rambd:
-#        condiciones={"idram":r[0]}
-#        print r[0]
+ruta = "/node/node/node[description='System Memory']/node[size]"
+columnas = ["equipo_num_serie"]
+datos=obtener_datos(arbol,ruta,columnas,[ns])
+rambd=buscar_componente("idram,clock,size","ram",datos)
+if rambd!=0:
+    for r in rambd:
+        condiciones={"idram":r[0]}
+        print r
 #        #borrar_componente()
-#columnas = ["size","clock","equipo_num_serie"]
-#valores = ["","",ns]
-#insertar_componente()
+columnas = ["size","clock","equipo_num_serie"]
+datos=obtener_datos(arbol,ruta,columnas,[ns])
+insertar_componente("ram",datos)
 
-#insertar_componente()
-
-# # info = arbol.xpath("/node/node/node[description='System Memory']/node[size]")
-# # datos["Memoria"] = {}
-# # cont = 1
-# # for i in info:
-# #     tmem = conversor(i.find("size").text)
-# #     tfreq = int(i.find("clock").text)/1000/1000
-# #     datos["Memoria"][cont] = "%s %d MHz" % (tmem,tfreq)
-# #     cont += 1
 
 # # HD
+
+ruta = "//node[@class='disk']/description[contains(text(),'Disk')]/../size"
+columnas = ["equipo_num_serie"]
+datos=obtener_datos(arbol,ruta,columnas,[ns])
+hdbd=buscar_componente("*","hd",datos)
+if hdbd!=0:
+    for r in hdbd:
+        condiciones={"serial":r[0]}
+        print r
+#        #borrar_componente()
+columnas = ["vendor","product","description","size","serial","equipo_num_serie"]
+datos=obtener_datos(arbol,ruta,columnas,[ns])
+insertar_componente("hd",datos)
 # # info = arbol.xpath("//node[@class='disk']/description[contains(text(),'Disk')]/../size/text()")
 # # datos["Discos duros"] = {}
 # # cont = 1
