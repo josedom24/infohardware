@@ -55,15 +55,9 @@ def buscar_componente(respuesta,tabla,datos):
     sql=sql[0:-4]
     cursor.execute(sql)
     tuplas=cursor.fetchall()
-    if len(tuplas)==0:
-        return 0
-    if len(tuplas)==1:
-        if len(tuplas[0])==1:
-            return tuplas[0][0]
-        else:
-            return tuplas[0]
-    else:
-        return tuplas
+    if len(tuplas)==1 and len(tuplas[0])==1:
+           return tuplas[0][0]
+    return tuplas
         
 def insertar_componente(tabla, datos):
     num_componentes = len(datos);
@@ -79,19 +73,6 @@ def insertar_componente(tabla, datos):
         sql = sql + ")"
         cursor.execute(sql)
 
-def actualizar_componente(tabla,datos,condiciones):
-    num_componentes = len(datos)
-    for i in xrange(num_componentes):
-        sql = "UPDATE %s SET " % tabla
-        cont=0
-        for j in datos[i].keys():
-             sql = sql + "%s='%s'," % (j,conversor(datos[i][j],j))
-        sql=sql[0:-1]
-        sql = sql + " WHERE "
-        for key in condiciones:
-            sql=sql+"%s='%s'," % (key,condiciones[key])
-        sql=sql[0:-1]
-        cursor.execute(sql)
 
 def borrar_componente(tabla,condiciones):
     sql = "DELETE FROM %s WHERE " % tabla
@@ -116,37 +97,61 @@ def escribir_equipo(datos):
 
     for linea in datos:
         print linea[0]
-        print linea[1]
+        for comp in linea[1]:
+            print escribir_componente(comp)
 
-             #print dato[1]
-            
-#            txt=""
-#            if type(dato)=="<type 'tuple'>":
-#                txt=""
-#                for i in xrange(len(dato)):
-#                    txt+=i+" "
-#                print txt
-#            else:
-#                txt+=dato+" "
-#            print txt
+def escribir_componente(comp):
+    txt=""
+    for c in comp:
+        if c!= None:
+            txt+=c+" "
+    return txt
 
 
-                
+def comparar_equipos(new,old):
+    res = False
+    for i in xrange(len(old)):
+            # Miro los componenetes nuevos que se han añadido
+            for j in xrange(len(new[i][1])):
+                newc=new[i][1][j]
+                encontrado = False
+                for k in xrange(len(old[i][1])):
+                    if(newc==old[i][1][k]):
+                        encontrado = True
+                        break;
+                if encontrado==False:
+                    print new[i][0]+"(+) "+escribir_componente(newc)
+            # Miro los componenetes antiguos que ya no están
+            for j in xrange(len(old[i][1])):
+                oldc=old[i][1][j]
+                encontrado = False
+                for k in xrange(len(new[i][1])):
+                    if(oldc==new[i][1][k]):
+                        encontrado = True
+                        break;
+                if encontrado==False:
+                    print new [i][0]+"(-) "+escribir_componente(oldc)
+                    
+    return res
+           
+
         
-
 
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 
 #Num serie
-ns = raw_input("Número de serie: ")
+ns=""
+while ns=="":
+    ns = raw_input("Número de serie: ")
 oldequipo=""
 if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
-    print "Equipo ya inventariado\nComponentes anteriores:\n\n"
-    escribir_equipo(oldequipo)
-
+    print "Equipo ya inventariado"
+else:
+    print "Equipo nuevo"
+print "Número de serie: "+ns
 
 #CPU
 ruta = "/node/node/node[description='CPU'][product]"
@@ -159,55 +164,38 @@ if idcpu==0:
     idcpu=buscar_componente("idcpu","cpu",datos)
 
 
-# Placa base
-
-ruta = "/node/node[description='Motherboard']"
-columnas = ["vendor","product","cpu_idcpu","num_serie"]
-datos=obtener_datos(arbol,ruta,columnas,[idcpu,ns])
-
+# Si el equipo esta ya inventariado: Borramos todos los componenetes guardados en la siguiente lista
 if buscar_n_serie(ns):
-     # Ya existe el equipo, comprobamos que tenga la misma CPU
-     cpubd=buscar_componente("cpu_idcpu","equipo",datos)
-     # Si las CPU son distintas se tiene que actualizar el equipo
-     if cpubd!=idcpu:
-         #Actualizamos el quipo con la nueva CPU
-         datoscpu=[{"cpu_idcpu":idcpu}]
-         condiciones = {"num_serie":ns}
-         actualizar_componente("equipo",datoscpu,condiciones)
-     # Ahora comprobamos si ha cambiado la placa base
-     vendorbd=buscar_componente("vendor","equipo",datos)
-     productbd=buscar_componente("product","equipo",datos)
-     if vendorbd==0 or productbd==0:
-         columnas = ["vendor","product"]
-         datos=obtener_datos(arbol,ruta,columnas)
-         # Actualizamos la placa base
-         actualizar_componente("equipo",datos,condiciones)
-         
-
-else:
-    #No existe el equipo, lo insertamos
-    insertar_componente("equipo",datos)
-
-# Si el equipo esta ya inventariado: Borramos todos los componenetes guardadoes en la siguiente lista
-if buscar_n_serie(ns):
-    tablas_a_borrar = ["ram","hd","cd","red"]
-    condiciones={"equipo_num_serie":ns}
+    tablas_a_borrar = ["ram","hd","cd","red","equipo"]
     for tabla in tablas_a_borrar:
-         borrar_componente(tabla,condiciones)
+        if tabla=="equipo":
+            condiciones={"num_serie":ns}
+        else:
+            condiciones={"equipo_num_serie":ns}
+        borrar_componente(tabla,condiciones)
     
 # Insertamos los restantes componentes
-tablas = ["ram","hd","cd","red"]
-rutas = ["/node/node/node[description='System Memory']/node[size]",
+tablas = ["equipo","ram","hd","cd","red"]
+rutas = ["/node/node[description='Motherboard']",
+"/node/node/node[description='System Memory']/node[size]",
 "//node[@class='disk' and @id='disk' and @handle!='']/size/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
 "//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]][@handle!='']"]
-columnas = [["size","clock","equipo_num_serie"],["vendor","product","description","size","serial","equipo_num_serie"],["vendor","product","equipo_num_serie"],["vendor","product","serial","equipo_num_serie"]]
+columnas = [["vendor","product","cpu_idcpu","num_serie"],["size","clock","equipo_num_serie"],["vendor","product","description","size","serial","equipo_num_serie"],["vendor","product","equipo_num_serie"],["vendor","product","serial","equipo_num_serie"]]
 for i in xrange(len(tablas)):
-    datos=obtener_datos(arbol,rutas[i],columnas[i],[ns])
+    if tablas[i]=="equipo":
+        datos=obtener_datos(arbol,rutas[i],columnas[i],[idcpu,ns])
+    else:
+        datos=obtener_datos(arbol,rutas[i],columnas[i],[ns])
     insertar_componente(tablas[i],datos)
 
 
 
-db.commit()
-print "Componentes actuales del equipo:\n\n"
-escribir_equipo(leer_equipo(ns))
+#db.commit()
+
+newequipo=leer_equipo(ns)
+escribir_equipo(newequipo)
+if oldequipo!="":
+    print "\nDIFERENCIAS"
+    if not comparar_equipos(newequipo,oldequipo):
+        print "No ha habido ningún cambio\n"
