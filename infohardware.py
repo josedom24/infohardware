@@ -157,7 +157,7 @@ if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
     texto+= "Equipo ya inventariado\n"
 else:
-    print "Equipo nuevo"
+    text+= "Equipo nuevo\n"
 texto+= "Número de serie: "+ns+"\n"
 
 #CPU
@@ -202,7 +202,7 @@ for i in xrange(len(tablas)):
         datos=obtener_datos(arbol,rutas[i],columnas[i],[ns])
     insertar_componente(tablas[i],datos)
 
-#db.commit()
+db.commit()
 
 newequipo=leer_equipo(ns)
 texto+=escribir_equipo(newequipo)
@@ -212,7 +212,7 @@ if oldequipo!="":
         texto+="\nDIFERENCIAS\n"
         texto+=dif+"\n"
     else:
-        texto+= "No ha habido ningún cambio desde el último inventario\n"
+        texto+= "\nNo ha habido ningún cambio desde el último inventario\n"
 
 print texto
 msg = MIMEText(texto)
