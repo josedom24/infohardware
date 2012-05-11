@@ -1,6 +1,8 @@
 # *-* coding: utf-8 *-*
 import os
 import MySQLdb
+import smtplib
+from email.mime.text import MIMEText
 from lxml import etree
 
 db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
@@ -39,7 +41,7 @@ def obtener_datos(arbol,ruta,datos,adicionales=None):
 
 
 def buscar_n_serie(num):
-    sql = "SELECT num_serie FROM equipo WHERE num_serie = %s" % num
+    sql = "SELECT num_serie FROM equipo WHERE num_serie = '%s'" % num
     cursor.execute(sql)
     if cursor.fetchone():
         return True
@@ -94,11 +96,14 @@ def leer_equipo(ns):
     return res
 
 def escribir_equipo(datos):
-
+    txt=""
     for linea in datos:
-        print linea[0]
+        txt+=linea[0]
+        txt+="\n"
         for comp in linea[1]:
-            print escribir_componente(comp)
+            txt+=escribir_componente(comp)
+            txt+="\n"
+    return txt
 
 def escribir_componente(comp):
     txt=""
@@ -109,7 +114,8 @@ def escribir_componente(comp):
 
 
 def comparar_equipos(new,old):
-    res = False
+
+    txt=""
     for i in xrange(len(old)):
             # Miro los componenetes nuevos que se han añadido
             for j in xrange(len(new[i][1])):
@@ -120,7 +126,8 @@ def comparar_equipos(new,old):
                         encontrado = True
                         break;
                 if encontrado==False:
-                    print new[i][0]+"(+) "+escribir_componente(newc)
+                    txt+= new[i][0]+"(+) "+escribir_componente(newc)
+                    txt+="\n"
             # Miro los componenetes antiguos que ya no están
             for j in xrange(len(old[i][1])):
                 oldc=old[i][1][j]
@@ -130,17 +137,17 @@ def comparar_equipos(new,old):
                         encontrado = True
                         break;
                 if encontrado==False:
-                    print new [i][0]+"(-) "+escribir_componente(oldc)
+                    txt+= new [i][0]+"(-) "+escribir_componente(oldc)
+                    txt+="\n"
                     
-    return res
+    return txt
            
-
-        
-
+######################Prorama principal######################
+   
 #os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
-
+texto=""
 #Num serie
 ns=""
 while ns=="":
@@ -148,10 +155,10 @@ while ns=="":
 oldequipo=""
 if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
-    print "Equipo ya inventariado"
+    texto+= "Equipo ya inventariado\n"
 else:
     print "Equipo nuevo"
-print "Número de serie: "+ns
+texto+= "Número de serie: "+ns+"\n"
 
 #CPU
 ruta = "/node/node/node[description='CPU'][product]"
@@ -181,7 +188,13 @@ rutas = ["/node/node[description='Motherboard']",
 "//node[@class='disk' and @id='disk' and @handle!='']/size/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
 "//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]][@handle!='']"]
-columnas = [["vendor","product","cpu_idcpu","num_serie"],["size","clock","equipo_num_serie"],["vendor","product","description","size","serial","equipo_num_serie"],["vendor","product","equipo_num_serie"],["vendor","product","serial","equipo_num_serie"]]
+columnas = [
+["vendor","product","cpu_idcpu","num_serie"],
+["size","clock","equipo_num_serie"],
+["vendor","product","description","size","serial","equipo_num_serie"],
+["vendor","product","equipo_num_serie"],
+["vendor","product","serial","equipo_num_serie"]]
+
 for i in xrange(len(tablas)):
     if tablas[i]=="equipo":
         datos=obtener_datos(arbol,rutas[i],columnas[i],[idcpu,ns])
@@ -189,13 +202,25 @@ for i in xrange(len(tablas)):
         datos=obtener_datos(arbol,rutas[i],columnas[i],[ns])
     insertar_componente(tablas[i],datos)
 
-
-
 #db.commit()
 
 newequipo=leer_equipo(ns)
-escribir_equipo(newequipo)
+texto+=escribir_equipo(newequipo)
 if oldequipo!="":
-    print "\nDIFERENCIAS"
-    if not comparar_equipos(newequipo,oldequipo):
-        print "No ha habido ningún cambio\n"
+    dif= comparar_equipos(newequipo,oldequipo)
+    if dif!="":
+        texto+="\nDIFERENCIAS\n"
+        texto+=dif+"\n"
+    else:
+        texto+= "No ha habido ningún cambio desde el último inventario\n"
+
+print texto
+msg = MIMEText(texto)
+me = "inventario@macaco.gonzalonazareno.org"
+you = ["josedom24@gmail.com"]
+msg['Subject'] = 'Inventario equipo número de serie '+ns
+msg['From'] = me
+msg['To'] = you
+s = smtplib.SMTP('localhost')
+#s.sendmail(me, you, msg.as_string())
+s.quit()
