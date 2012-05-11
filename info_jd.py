@@ -58,7 +58,10 @@ def buscar_componente(respuesta,tabla,datos):
     if len(tuplas)==0:
         return 0
     if len(tuplas)==1:
-        return tuplas[0][0]
+        if len(tuplas[0])==1:
+            return tuplas[0][0]
+        else:
+            return tuplas[0]
     else:
         return tuplas
         
@@ -98,7 +101,38 @@ def borrar_componente(tabla,condiciones):
     cursor.execute(sql)
 
 def leer_equipo(ns):
-    return true
+    res=[]
+    idcpu=buscar_componente("cpu_idcpu","equipo",[{"num_serie":ns}])
+    res.append(["cpu:",buscar_componente("vendor,product,slot","cpu",[{"idcpu":idcpu}])])
+    res.append(["placa:",buscar_componente("vendor,product","equipo",[{"num_serie":ns}])])
+    res.append(["ram:",buscar_componente("size,clock","ram",[{"equipo_num_serie":ns}])])
+    res.append(["hd:",buscar_componente("serial,vendor,product,description,size","hd",[{"equipo_num_serie":ns}])])
+    res.append(["cd:",buscar_componente("vendor,product","cd",[{"equipo_num_serie":ns}])])
+    res.append(["red:",buscar_componente("serial,vendor,product","red",[{"equipo_num_serie":ns}])])
+    
+    return res
+
+def escribir_equipo(datos):
+
+    for linea in datos:
+        print linea[0]
+        print linea[1]
+
+             #print dato[1]
+            
+#            txt=""
+#            if type(dato)=="<type 'tuple'>":
+#                txt=""
+#                for i in xrange(len(dato)):
+#                    txt+=i+" "
+#                print txt
+#            else:
+#                txt+=dato+" "
+#            print txt
+
+
+                
+        
 
 
 #os.system("lshw -xml>/tmp/sys.xml")
@@ -110,7 +144,8 @@ ns = raw_input("Número de serie: ")
 oldequipo=""
 if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
-
+    print "Equipo ya inventariado\nComponentes anteriores:\n\n"
+    escribir_equipo(oldequipo)
 
 
 #CPU
@@ -174,4 +209,5 @@ for i in xrange(len(tablas)):
 
 
 db.commit()
-
+print "Componentes actuales del equipo:\n\n"
+escribir_equipo(leer_equipo(ns))
