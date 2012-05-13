@@ -86,12 +86,12 @@ def borrar_componente(tabla,condiciones):
 def leer_equipo(ns):
     res=[]
     idcpu=buscar_componente("cpu_idcpu","equipo",[{"num_serie":ns}])
-    res.append(["cpu:",buscar_componente("vendor,product,slot","cpu",[{"idcpu":idcpu}])])
-    res.append(["placa:",buscar_componente("vendor,product","equipo",[{"num_serie":ns}])])
-    res.append(["ram:",buscar_componente("size,clock","ram",[{"equipo_num_serie":ns}])])
-    res.append(["hd:",buscar_componente("serial,vendor,product,description,size","hd",[{"equipo_num_serie":ns}])])
-    res.append(["cd:",buscar_componente("vendor,product","cd",[{"equipo_num_serie":ns}])])
-    res.append(["red:",buscar_componente("serial,vendor,product","red",[{"equipo_num_serie":ns}])])
+    res.append(["CPU:",buscar_componente("vendor,product,slot","cpu",[{"idcpu":idcpu}])])
+    res.append(["Placa Base:",buscar_componente("vendor,product","equipo",[{"num_serie":ns}])])
+    res.append(["RAM:",buscar_componente("size,clock","ram",[{"equipo_num_serie":ns}])])
+    res.append(["HD:",buscar_componente("serial,vendor,product,description,size","hd",[{"equipo_num_serie":ns}])])
+    res.append(["CD:",buscar_componente("vendor,product","cd",[{"equipo_num_serie":ns}])])
+    res.append(["Red:",buscar_componente("serial,vendor,product","red",[{"equipo_num_serie":ns}])])
     
     return res
 
@@ -144,7 +144,7 @@ def comparar_equipos(new,old):
            
 ######################Prorama principal######################
    
-#os.system("lshw -xml>/tmp/sys.xml")
+os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 texto=""
