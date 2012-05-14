@@ -172,7 +172,7 @@ while ns=="":
     ns = raw_input("Número de serie ('iesgn' si el euipo no tiene asignado uno): ")
 
 if(ns=="iesgn"):
-	ns="iesgn%s" % buscar_ns()
+	ns="iesgn%s" % buscar_ns_iesgn()
 
 oldequipo=""
 if buscar_n_serie(ns):
