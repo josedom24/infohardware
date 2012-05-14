@@ -41,7 +41,7 @@ def obtener_datos(arbol,ruta,datos,adicionales=None):
             except:
                 if adicionales!=None:
                        valor=adicionales[cont_adicionales]
-                cont_adicionales+=1
+                       cont_adicionales+=1
             intermedio[dato]=valor;
         respuesta.append(intermedio)
     return respuesta
@@ -166,10 +166,8 @@ texto+= "Número de serie: "+ns+"\n"
 ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
-print datos
 idcpu=buscar_componente("idcpu","cpu",datos)
-print idcpu
-if len(idcpu)==0:
+if idcpu==0:
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
 
@@ -188,7 +186,7 @@ if buscar_n_serie(ns):
 tablas = ["equipo","ram","hd","cd","red"]
 rutas = ["/node/node[description='Motherboard']",
 "/node/node/node[description='System Memory']/node[size]",
-"//node[@class='disk' and @id='disk' and @handle!='']/size/..",
+"//node[@class='disk' and @id='disk' and @handle!='']/size/../serial/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
 "//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]][@handle!='']"]
 columnas = [
