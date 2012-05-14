@@ -5,7 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from lxml import etree
 
-db = MySQLdb.connect(host='192.168.100.254',user='root',passwd='pass',db='inventario')
+db = MySQLdb.connect(host='',user='',passwd='',db='inventario')
 cursor = db.cursor()
 
 
@@ -62,6 +62,7 @@ def buscar_componente(respuesta,tabla,datos):
     return tuplas
         
 def insertar_componente(tabla, datos):
+    print datos
     num_componentes = len(datos);
     for i in xrange(num_componentes):
         sql = "INSERT INTO %s(" % tabla
@@ -157,16 +158,17 @@ if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
     texto+= "Equipo ya inventariado\n"
 else:
-    text+= "Equipo nuevo\n"
+    texto+= "Equipo nuevo\n"
 texto+= "Número de serie: "+ns+"\n"
 
 #CPU
 ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
+print datos
 idcpu=buscar_componente("idcpu","cpu",datos)
-
-if idcpu==0:
+print idcpu
+if len(idcpu)==0:
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
 
@@ -217,10 +219,10 @@ if oldequipo!="":
 print texto
 msg = MIMEText(texto)
 me = "inventario@macaco.gonzalonazareno.org"
-you = ["josedom24@gmail.com"]
+you = "josedom24@gmail.com"
 msg['Subject'] = 'Inventario equipo número de serie '+ns
 msg['From'] = me
 msg['To'] = you
-s = smtplib.SMTP('localhost')
-#s.sendmail(me, you, msg.as_string())
+s = smtplib.SMTP('babuino.gonzalonazareno.org')
+s.sendmail(me, [you], msg.as_string())
 s.quit()
