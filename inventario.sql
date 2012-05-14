@@ -24,11 +24,10 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `inventario`.`equipo` (
   `num_serie` VARCHAR(45) NOT NULL ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `cpu_idcpu` INT NOT NULL ,
   PRIMARY KEY (`num_serie`) ,
   INDEX `fk_cpu_cpu1` (`cpu_idcpu` ASC) ,
-  UNIQUE INDEX `num_serie_UNIQUE` (`num_serie` ASC) ,
   CONSTRAINT `fk_cpu_cpu1`
     FOREIGN KEY (`cpu_idcpu` )
     REFERENCES `inventario`.`cpu` (`idcpu` )
@@ -64,7 +63,7 @@ CREATE  TABLE IF NOT EXISTS `inventario`.`hd` (
   `serial` VARCHAR(45) NOT NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `description` VARCHAR(45) NULL ,
   `size` VARCHAR(45) NULL ,
   PRIMARY KEY (`serial`, `equipo_num_serie`) ,
@@ -84,7 +83,7 @@ DEFAULT CHARACTER SET = utf8;
 CREATE  TABLE IF NOT EXISTS `inventario`.`cd` (
   `idcd` INT NOT NULL AUTO_INCREMENT ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   PRIMARY KEY (`idcd`) ,
   INDEX `fk_cd_equipo1` (`equipo_num_serie` ASC) ,
@@ -104,7 +103,7 @@ CREATE  TABLE IF NOT EXISTS `inventario`.`red` (
   `mac` VARCHAR(45) NOT NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `vendor` VARCHAR(45) NULL ,
-  `product` VARCHAR(45) NULL ,
+  `product` VARCHAR(70) NULL ,
   PRIMARY KEY (`mac`, `equipo_num_serie`) ,
   INDEX `fk_red_equipo1` (`equipo_num_serie` ASC) ,
   CONSTRAINT `fk_red_equipo1`
