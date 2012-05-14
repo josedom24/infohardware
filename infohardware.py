@@ -4,10 +4,17 @@ import MySQLdb
 import smtplib
 from email.mime.text import MIMEText
 from lxml import etree
+from ConfigParser import SafeConfigParser
 
-db = MySQLdb.connect(host='',user='',passwd='',db='inventario')
+# Cargamos en parser el fichero de parámetros
+parser = SafeConfigParser()
+parser.read('infohardware.cfg')
+# Realizamos la conexión a la Base de Datos
+db = MySQLdb.connect(host = parser.get('mysql','host'),
+                     user = parser.get('mysql','user'),
+                     passwd = parser.get('mysql','password'),
+                     db = parser.get('mysql','db'))
 cursor = db.cursor()
-
 
 def conversor(cant,columna):
     aux=cant
@@ -39,7 +46,6 @@ def obtener_datos(arbol,ruta,datos,adicionales=None):
         respuesta.append(intermedio)
     return respuesta
 
-
 def buscar_n_serie(num):
     sql = "SELECT num_serie FROM equipo WHERE num_serie = '%s'" % num
     cursor.execute(sql)
@@ -48,8 +54,7 @@ def buscar_n_serie(num):
     else:
         return False
 
-def buscar_componente(respuesta,tabla,datos):
-    
+def buscar_componente(respuesta,tabla,datos):    
     sql = "SELECT %s FROM %s WHERE " % (respuesta,tabla)
     
     for k in datos[0].keys():
@@ -75,7 +80,6 @@ def insertar_componente(tabla, datos):
         sql=sql[0:-1]    
         sql = sql + ")"
         cursor.execute(sql)
-
 
 def borrar_componente(tabla,condiciones):
     sql = "DELETE FROM %s WHERE " % tabla
@@ -113,9 +117,7 @@ def escribir_componente(comp):
             txt+=c+" "
     return txt
 
-
 def comparar_equipos(new,old):
-
     txt=""
     for i in xrange(len(old)):
             # Miro los componenetes nuevos que se han añadido
@@ -144,7 +146,6 @@ def comparar_equipos(new,old):
     return txt
            
 ######################Prorama principal######################
-   
 os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
@@ -218,11 +219,11 @@ if oldequipo!="":
 
 print texto
 msg = MIMEText(texto)
-me = "inventario@macaco.gonzalonazareno.org"
-you = "josedom24@gmail.com"
+me = '%s' % parser.get('smtp','smtp_from')
+you = '%s' % parser.get('smtp','smtp_to')
 msg['Subject'] = 'Inventario equipo número de serie '+ns
 msg['From'] = me
 msg['To'] = you
-s = smtplib.SMTP('babuino.gonzalonazareno.org')
+s = smtplib.SMTP('%s' % parser.get('smtp','smtp_to'))
 s.sendmail(me, [you], msg.as_string())
 s.quit()
