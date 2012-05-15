@@ -85,7 +85,6 @@ def buscar_componente(respuesta,tabla,datos):
     return tuplas
         
 def insertar_componente(tabla, datos):
-    print datos
     num_componentes = len(datos);
     for i in xrange(num_componentes):
         sql = "INSERT INTO %s(" % tabla
@@ -246,5 +245,5 @@ msg['Subject'] = 'Inventario equipo número de serie '+ns
 msg['From'] = me
 msg['To'] = you
 s = smtplib.SMTP('%s' % parser.get('smtp','smtp_server'))
-s.sendmail(me, [you], msg.as_string())
+#s.sendmail(me, [you], msg.as_string())
 s.quit()

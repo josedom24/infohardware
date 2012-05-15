@@ -19,11 +19,26 @@ from ConfigParser import SafeConfigParser
 parser = SafeConfigParser()
 parser.read('infohardware.cfg')
 # Realizamos la conexión a la Base de Datos
-db = MySQLdb.connect(host = parser.get('mysql','host'),
-                     user = parser.get('mysql','user'),
-                     passwd = parser.get('mysql','password'),
-                     db = parser.get('mysql','db'))
+# Versión IESGN: Se pide contraseña por teclado, sino se acierta se termina.
+try:
+    db = MySQLdb.connect(host = parser.get('mysql','host'),
+                         user = parser.get('mysql','user'),
+                         passwd = getpass("Contraseña de MySQL: "),
+                         db = parser.get('mysql','db'))
+except:
+    exit()
 cursor = db.cursor()
+
+# Versión IESGN: Función que busca el número de serie siguiente para los equipos que no tienen número de serie asignados.
+def buscar_ns_iesgn():
+        sql="select num_serie from equipo where num_serie like 'iesgn%' order by num_serie desc"
+        cursor.execute(sql)
+        tupla=cursor.fetchone()
+        if tupla!=None:
+                return "%.4d" % ((int)(tupla[0][5:])+1)
+        else:
+                return "0001"
+
 
 def conversor(cant,columna):
     aux=cant
@@ -71,14 +86,11 @@ def buscar_componente(respuesta,tabla,datos):
     sql=sql[0:-4]
     cursor.execute(sql)
     tuplas=cursor.fetchall()
-    if len(tuplas)==0:
-	return 0
     if len(tuplas)==1 and len(tuplas[0])==1:
            return tuplas[0][0]
     return tuplas
         
 def insertar_componente(tabla, datos):
-    print datos
     num_componentes = len(datos);
     for i in xrange(num_componentes):
         sql = "INSERT INTO %s(" % tabla
@@ -165,6 +177,14 @@ texto=""
 ns=""
 while ns=="":
     ns = raw_input("Número de serie: ")
+# Versión IESGN: Si el equipo no tiene número de serie asignado se puede poner iesgn, y entonces automáticamente se asignará$
+while ns=="":
+    ns = raw_input("Número de serie ('iesgn' si el equipo no tiene asignado uno): ")
+
+if(ns=="iesgn"):
+        ns="iesgn%s" % buscar_ns_iesgn()
+
+
 oldequipo=""
 if buscar_n_serie(ns):
     oldequipo=leer_equipo(ns)
@@ -178,10 +198,13 @@ ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
-if idcpu==0:
+try:
+    idcpu=idcpu[0]
+except:
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
-
+    idcpu=idcpu[0]
+    
 
 # Si el equipo esta ya inventariado: Borramos todos los componenetes guardados en la siguiente lista
 if buscar_n_serie(ns):
