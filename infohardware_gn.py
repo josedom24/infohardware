@@ -5,6 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from lxml import etree
 from ConfigParser import SafeConfigParser
+from getpass import getpass
 
 # Cargamos en parser el fichero de parámetros
 parser = SafeConfigParser()
@@ -14,7 +15,7 @@ parser.read('infohardware.cfg')
 try:
     db = MySQLdb.connect(host = parser.get('mysql','host'),
                          user = parser.get('mysql','user'),
-                         passwd = raw_input("Contraseña:"),
+                         passwd = getpass("Contraseña de MySQL: "),
                          db = parser.get('mysql','db'))
 except:
     exit()
@@ -169,7 +170,7 @@ texto=""
 ns=""
 # Versión IESGN: Si el equipo no tiene número de serie asignado se puede poner iesgn, y entonces automáticamente se asignará un número de serie de la forma iesgn9999
 while ns=="":
-    ns = raw_input("Número de serie ('iesgn' si el euipo no tiene asignado uno): ")
+    ns = raw_input("Número de serie ('iesgn' si el equipo no tiene asignado uno): ")
 
 if(ns=="iesgn"):
 	ns="iesgn%s" % buscar_ns_iesgn()
