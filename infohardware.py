@@ -233,6 +233,6 @@ you = '%s' % parser.get('smtp','smtp_to')
 msg['Subject'] = 'Inventario equipo número de serie '+ns
 msg['From'] = me
 msg['To'] = you
-s = smtplib.SMTP('%s' % parser.get('smtp','smtp_to'))
+s = smtplib.SMTP('%s' % parser.get('smtp','smtp_server'))
 s.sendmail(me, [you], msg.as_string())
 s.quit()
