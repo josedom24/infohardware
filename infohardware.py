@@ -220,7 +220,7 @@ rutas = ["/node/node[description='Motherboard']",
 "/node/node/node[description='System Memory']/node[size]",
 "//node[@class='disk' and @id='disk' and @handle!='']/size/../serial/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
-"//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wire')]][@handle!='']"]
+"//node[@class='network' or @class='bridge']/../node[description[contains(text(),'Eth') or contains(text(),'Wireless')]][@handle!='']"]
 columnas = [
 ["vendor","product","cpu_idcpu","num_serie"],
 ["size","clock","equipo_num_serie"],
