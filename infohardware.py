@@ -176,7 +176,7 @@ ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
-if idcpu==0:
+if len(idcpu)==0:
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
 
