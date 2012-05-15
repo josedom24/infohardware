@@ -14,10 +14,12 @@ except ImportError:
     print "No se encuentra la biblioteca lxml"
     exit()    
 from ConfigParser import SafeConfigParser
+from getpass import getpass
 
 # Cargamos en parser el fichero de parámetros
 parser = SafeConfigParser()
 parser.read('infohardware.cfg')
+
 # Realizamos la conexión a la Base de Datos
 # Versión IESGN: Se pide contraseña por teclado, sino se acierta se termina.
 try:
@@ -175,8 +177,6 @@ arbol = etree.parse ("/tmp/sys.xml")
 texto=""
 #Num serie
 ns=""
-while ns=="":
-    ns = raw_input("Número de serie: ")
 # Versión IESGN: Si el equipo no tiene número de serie asignado se puede poner iesgn, y entonces automáticamente se asignará$
 while ns=="":
     ns = raw_input("Número de serie ('iesgn' si el equipo no tiene asignado uno): ")
@@ -199,13 +199,11 @@ columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
 try:
-    idcpu=idcpu[0]
+	if len(idcpu)==0:
+	    insertar_componente("cpu",datos)
+	    idcpu=buscar_componente("idcpu","cpu",datos)
 except:
-    insertar_componente("cpu",datos)
-    idcpu=buscar_componente("idcpu","cpu",datos)
-    idcpu=idcpu[0]
-    
-
+	idcpu=idcpu
 # Si el equipo esta ya inventariado: Borramos todos los componenetes guardados en la siguiente lista
 if buscar_n_serie(ns):
     tablas_a_borrar = ["ram","hd","cd","red","equipo"]
@@ -257,5 +255,5 @@ msg['Subject'] = 'Inventario equipo número de serie '+ns
 msg['From'] = me
 msg['To'] = you
 s = smtplib.SMTP('%s' % parser.get('smtp','smtp_server'))
-s.sendmail(me, [you], msg.as_string())
+#s.sendmail(me, [you], msg.as_string())
 s.quit()
