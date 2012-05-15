@@ -71,6 +71,8 @@ def buscar_componente(respuesta,tabla,datos):
     sql=sql[0:-4]
     cursor.execute(sql)
     tuplas=cursor.fetchall()
+    if len(tuplas)==0:
+	return 0
     if len(tuplas)==1 and len(tuplas[0])==1:
            return tuplas[0][0]
     return tuplas
@@ -176,7 +178,7 @@ ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos=obtener_datos(arbol,ruta,columnas);
 idcpu=buscar_componente("idcpu","cpu",datos)
-if len(idcpu)==0:
+if idcpu==0:
     insertar_componente("cpu",datos)
     idcpu=buscar_componente("idcpu","cpu",datos)
 
