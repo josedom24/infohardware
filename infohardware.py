@@ -1,9 +1,18 @@
-# *-* coding: utf-8 *-*
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
-import MySQLdb
+try:
+    import MySQLdb
+except ImportError:
+    print "No se encuentra la biblioteca MySQLdb"
+    exit()
 import smtplib
 from email.mime.text import MIMEText
-from lxml import etree
+try:
+    from lxml import etree
+except ImportError:
+    print "No se encuentra la biblioteca lxml"
+    exit()    
 from ConfigParser import SafeConfigParser
 
 # Cargamos en parser el fichero de parámetros
