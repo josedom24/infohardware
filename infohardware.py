@@ -50,7 +50,7 @@ def conversor(cant,columna):
         if aux > 1024:
             aux = "%s %s" % (str(aux/1024),unit[1])
         else:
-            aux=str(tmem)+unit[0]
+            aux=str(aux)+unit[0]
     if columna=="clock":
         aux="%d MHz" % (int(cant)/1000000)
     return aux
