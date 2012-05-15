@@ -100,11 +100,11 @@ DEFAULT CHARACTER SET = utf8;
 -- Table `inventario`.`red`
 -- -----------------------------------------------------
 CREATE  TABLE IF NOT EXISTS `inventario`.`red` (
-  `mac` VARCHAR(45) NOT NULL ,
+  `serial` VARCHAR(45) NOT NULL ,
   `equipo_num_serie` VARCHAR(45) NOT NULL ,
   `vendor` VARCHAR(45) NULL ,
   `product` VARCHAR(70) NULL ,
-  PRIMARY KEY (`mac`, `equipo_num_serie`) ,
+  PRIMARY KEY (`serial`, `equipo_num_serie`) ,
   INDEX `fk_red_equipo1` (`equipo_num_serie` ASC) ,
   CONSTRAINT `fk_red_equipo1`
     FOREIGN KEY (`equipo_num_serie` )
