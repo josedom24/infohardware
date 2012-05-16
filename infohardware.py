@@ -34,8 +34,8 @@ cursor = db.cursor()
 # Versión IESGN: Función que busca el número de serie siguiente para los
 # equipos que no tienen número de serie asignados.
 def buscar_ns_iesgn():
-    sql = "select num_serie from equipo where num_serie like 'iesgn%'
-    order by num_serie desc"
+    sql = "select num_serie from equipo where num_serie like 'iesgn%' \
+order by num_serie desc"
     cursor.execute(sql)
     tupla = cursor.fetchone()
     if tupla != None:
@@ -64,18 +64,31 @@ def conversor(cant, columna):
 
 def obtener_datos(arbol, ruta, datos, adicionales = None):
     respuesta = []
+    # Cálculamos la cantidad de datos que debemos buscar en 
+    # el fichero xml (con xpath), será el tamaño de la lista
+    # datos menos el tamaño de la lista adicionales
+    if adicionales != None:
+        cantcolxml = len(datos) - len(adicionales)
+    else:
+        cantcolxml = len(datos)
+                                      
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
         intermedio = {}
         cont_adicionales = 0
+        cont_datos = 1
         for dato in datos:
             try:
                 valor = arbol.xpath("%s/%s/text()" % (ruta,dato))[i]
             except:
-                if adicionales != None:
-                    valor = adicionales[cont_adicionales]
-                    cont_adicionales += 1
+                if cont_datos <= cantcolxml:
+                    valor = ""
+                else:
+                    if adicionales != None:
+                        valor = adicionales[cont_adicionales]
+                        cont_adicionales += 1
             intermedio[dato] = valor
+            cont_datos += 1
         respuesta.append(intermedio)
     return respuesta
 
@@ -128,7 +141,7 @@ def leer_equipo(ns):
                                                 [{"num_serie":ns}])])
     res.append(["RAM:",buscar_componente("size,clock","ram",
                                          [{"equipo_num_serie":ns}])])
-    res.append(["HD:",buscar_componente("serial,vendor,product,
+    res.append(["HD:",buscar_componente("serial,vendor,product,\
                                         description,size","hd",
                                         [{"equipo_num_serie":ns}])])
     res.append(["CD:",buscar_componente("vendor,product","cd",
@@ -182,7 +195,7 @@ def comparar_equipos(new,old):
     return txt
            
 ###################### Programa principal #####################################
-os.system("lshw -xml>/tmp/sys.xml")
+#os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 texto=""
@@ -191,8 +204,8 @@ ns = ""
 # Versión IESGN: Si el equipo no tiene número de serie asignado se puede poner
 # iesgn, y entonces automáticamente se asignará$
 while ns == "":
-    ns = raw_input("Número de serie ('iesgn' si el equipo no tiene asignado
-                   uno): ")
+    ns = raw_input("Número de serie ('iesgn' si el equipo no tiene asignado\
+uno): ")
 if ns == "iesgn":
     ns = "iesgn%s" % buscar_ns_iesgn()
 oldequipo = ""
@@ -228,11 +241,11 @@ if buscar_n_serie(ns):
 # Insertamos los restantes componentes
 tablas = ["equipo","ram","hd","cd","red"]
 rutas = ["/node/node[description='Motherboard']",
-"/node/node/node[description='System Memory']/node[size]",
+         "/node/node/node[description='System Memory']/node[size]",
 "//node[@class='disk' and @id='disk' and @handle!='']/size/../serial/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
-"//node[@class='network' or @class='bridge']/../node[description[contains(text(),
-         'Eth') or contains(text(),'Wireless')]][@handle!='']"]
+"//node[@class='network' or @class='bridge']/../node[description[contains(text(),\
+'Eth') or contains(text(),'Wireless')]][@handle!='']"]
 columnas = [
 ["vendor","product","cpu_idcpu","num_serie"],
 ["size","clock","equipo_num_serie"],
