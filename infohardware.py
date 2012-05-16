@@ -54,7 +54,7 @@ def conversor(cant, columna):
     if columna == "size":
         unit = ['MB','GB']
         aux = int(cant) / 2**20
-        if aux > 1024:
+        if aux >= 1024:
             aux = "%s %s" % (str(aux / 1024), unit[1])
         else:
             aux = str(aux) + unit[0]
@@ -195,7 +195,7 @@ def comparar_equipos(new,old):
     return txt
            
 ###################### Programa principal #####################################
-#os.system("lshw -xml>/tmp/sys.xml")
+os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
 texto=""
