@@ -260,7 +260,6 @@ for i in xrange(len(tablas)):
         datos = obtener_datos(arbol, rutas[i], columnas[i], [ns])
     insertar_componente(tablas[i], datos)
 
-db.commit()
 
 newequipo = leer_equipo(ns)
 texto += escribir_equipo(newequipo)
@@ -279,6 +278,19 @@ you = '%s' % parser.get('smtp', 'smtp_to')
 msg['Subject'] = 'Inventario equipo número de serie ' + ns
 msg['From'] = me
 msg['To'] = you
-s = smtplib.SMTP('%s' % parser.get('smtp', 'smtp_server'))
-#s.sendmail(me, [you], msg.as_string())
-s.quit()
+
+# Si el equipo ya esta invnetariado y ha habido diferencia, confirmo la actualización
+
+actualizacion = True
+if oldequipo != "" and dif != "":
+    resp = " "
+    while resp != "s" and resp != "n":
+        resp = raw_input("¿Estás seguro de modificar la configuración del equipo %s (s/n)" % ns)
+        if resp == "n":
+            actualizacion = False
+            
+if actualizacion:
+    db.commit()
+    s = smtplib.SMTP('%s' % parser.get('smtp', 'smtp_server'))
+    #s.sendmail(me, [you], msg.as_string())
+    s.quit()
