@@ -51,14 +51,14 @@ def conversor(cant, columna):
     la misma cantidad en MB o GB (discos duros) o MHz (ram)
     """
     aux = cant
-    if columna == "size":
+    if columna == "size" and aux != "":
         unit = ['MB','GB']
         aux = int(cant) / 2**20
         if aux >= 1024:
             aux = "%s %s" % (str(aux / 1024), unit[1])
         else:
             aux = str(aux) + unit[0]
-    if columna == "clock":
+    if columna == "clock" and aux != "":
         aux = "%d MHz" % (int(cant) / 10**6)
     return aux
 
