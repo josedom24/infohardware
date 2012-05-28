@@ -242,7 +242,7 @@ if buscar_n_serie(ns):
 tablas = ["equipo","ram","hd","cd","red"]
 rutas = ["/node/node[description='Motherboard']",
          "/node/node/node[description='System Memory']/node[size]",
-"//node[@class='disk' and @id='disk' and @handle!='']/size/../serial/..",
+"//node[@class='disk' and starts-with(@id,'disk') and @handle!='']/size/../serial/..",
 "//node[@class='disk' and @id='cdrom' and @handle!='']/..",
 "//node[@class='network' or @class='bridge']/../node[description[contains(text(),\
 'Eth') or contains(text(),'Wireless')]][@handle!='']"]
@@ -292,5 +292,5 @@ if oldequipo != "" and dif != "":
 if actualizacion:
     db.commit()
     s = smtplib.SMTP('%s' % parser.get('smtp', 'smtp_server'))
-    #s.sendmail(me, [you], msg.as_string())
+    s.sendmail(me, [you], msg.as_string())
     s.quit()
