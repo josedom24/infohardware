@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+# Comprobamos que existen las librerías necesarias
+# python-mysqldb
 try:
     import MySQLdb
 except ImportError:
@@ -8,6 +10,7 @@ except ImportError:
     exit()
 import smtplib
 from email.mime.text import MIMEText
+# python-lxml
 try:
     from lxml import etree
 except ImportError:
@@ -16,7 +19,7 @@ except ImportError:
 from ConfigParser import SafeConfigParser
 from getpass import getpass
 
-# Cargamos en parser el fichero de parámetros
+# Cargamos en parser el fichero de configuración
 parser = SafeConfigParser()
 parser.read('infohardware.cfg')
 
@@ -63,20 +66,43 @@ def conversor(cant, columna):
     return aux
 
 def obtener_datos(arbol, ruta, datos, adicionales = None):
+    """
+    Función que lee del arbol xml donde tenemos la configuración del 
+    equipo los datos que le indicamos a partir de una expresión xpath.
+    Devuelve los datos leidos del arbol xml además de los datos que 
+    opcionalmente se pueden pasar en el parámetro adicionales.
+
+    arbol - Objeto ElementTree que representa la información del sistema
+    ruta - Expresión xpath base para realizar la consultas
+    datos - Lista donde se guarda los datos que vamos a leer
+    adicionales - Lista opcional donde guardamos datos que se van a 
+    devolver, además de los datos leídos con xpath
+
+    La función devuelve una lista con los datos leidos (diccionario) 
+    haciendo las consultas con xpath más los posibles datos que se 
+    han recibido en el parámetro adicionales.
+    """
     respuesta = []
-    # Cálculamos la cantidad de datos que debemos buscar en 
-    # el fichero xml (con xpath), será el tamaño de la lista
-    # datos menos el tamaño de la lista adicionales
+   
+    # Calculamos el número de datos que vamos a consultar con xpath
+    # Si hemos enviado datos adicionales, será el tamaño de la lista 
+    # datos menos la longitud de la lista adicionales.
     if adicionales != None:
         cantcolxml = len(datos) - len(adicionales)
     else:
         cantcolxml = len(datos)
-                                      
+    
+    # Comprobamos el número de componentes (cantidad de discos duros,
+    # cantidad de memorias, ...
     num_componentes = int(arbol.xpath('count(%s)' % ruta))
     for i in xrange(num_componentes):
         intermedio = {}
         cont_adicionales = 0
         cont_datos = 1
+        # Para cada dato lo intnetamos leer del arbol xml con la expresión xpath
+        # sino es posible, si todavía estamos leyendo datos con xpath, el valor
+        # es cadena vacia, si ya hemos leido toddos los datos con xpath, el valor
+        # se obtendra de la lista adicionales. 
         for dato in datos:
             try:
                 valor = arbol.xpath("%s/%s/text()" % (ruta,dato))[i]
@@ -93,6 +119,12 @@ def obtener_datos(arbol, ruta, datos, adicionales = None):
     return respuesta
 
 def buscar_n_serie(num):
+    """
+    Función que comprueba si existe un equipo con un determinado número de serie.
+    num - Número de serie a buscar
+    La función devuelve un valor boolerano (false si nno se ha encontrado un equipo
+    con el número de serie recibido.
+    """
     sql = "SELECT num_serie FROM equipo WHERE num_serie = '%s'" % num
     cursor.execute(sql)
     if cursor.fetchone():
@@ -101,6 +133,16 @@ def buscar_n_serie(num):
         return False
 
 def buscar_componente(respuesta, tabla, datos):
+    """
+    Función que busca en la base de datos la información de un equipo.
+    respuesta - Atributo que queremos devolver
+    tabla - Tabla de la base de datos donde queremos buscar
+    datos - Una lista con los campos y valores que se utilizará para
+    determinar la condición de busqueda.
+    La función puede devolver dos clases de valores:
+    - Si sólo se obtiene un registro con un valor se devuelve el valor.
+    - Si se obtiene más de un registro se devuelve una tupla 
+    """
     sql = "SELECT %s FROM %s WHERE " % (respuesta, tabla)
     for k in datos[0].keys():
         sql = sql + "%s = '%s' AND " % (k,datos[0][k])
@@ -112,6 +154,11 @@ def buscar_componente(respuesta, tabla, datos):
     return tuplas
 
 def insertar_componente(tabla, datos):
+    """
+    La función realiza la inserción de datos en la base de datos
+    tabla - Tabla donde vamos a insertar un nuevo registro
+    datos - Lista con los datos que vamos a insertar
+    """
     num_componentes = len(datos)
     for i in xrange(num_componentes):
         sql = "INSERT INTO %s(" % tabla
@@ -126,6 +173,12 @@ def insertar_componente(tabla, datos):
         cursor.execute(sql)
 
 def borrar_componente(tabla, condiciones):
+    """
+    La función realiza el borrado de datos en la base de datos
+    tabla - Tabla donde vamos a borrar un registro
+    datos - Lista con los datos que vamos a utilizar para seleccionar
+    el registro que vamos a borrar.
+    """
     sql = "DELETE FROM %s WHERE " % tabla
     for key in condiciones:
         sql = sql + "%s='%s'," % (key, condiciones[key])
@@ -133,6 +186,14 @@ def borrar_componente(tabla, condiciones):
     cursor.execute(sql)
 
 def leer_equipo(ns):
+    """Función que lee las características de un equipo guardado en 
+    la base de datos
+    ns - Númerod e serie del equipo que queremos leer
+    La función devuelve una lista de listas con las características
+    que hemos leido del equipo (CPU,Placa BAse,RAM,HD,RED)
+    Se devuelve también los títulos que se van a mostrar para dar la 
+    información de los distintos componenetes.
+    """
     res=[]
     idcpu=buscar_componente("cpu_idcpu","equipo",[{"num_serie":ns}])
     res.append(["CPU:",buscar_componente("vendor,product,slot","cpu",
@@ -151,6 +212,11 @@ def leer_equipo(ns):
     return res
 
 def escribir_equipo(datos):
+    """
+    Función que recibe una lista con las características de un equipo
+    devuelta por la función leer_equipo. 
+    Devuelve un string con dicha información lista para imprimir.
+    """
     txt=""
     for linea in datos:
         txt += linea[0]
@@ -161,6 +227,11 @@ def escribir_equipo(datos):
     return txt
 
 def escribir_componente(comp):
+    """
+    Función auxiliar que devuelve en un string la información
+    de un componenete en concreto. Utilziada por la función 
+    escribir_equipo
+    """
     txt=""
     for c in comp:
         if c != None:
@@ -168,6 +239,16 @@ def escribir_componente(comp):
     return txt
 
 def comparar_equipos(new,old):
+    """
+    Función que recibe dos listas, con la información de dos equipos.
+    Se puede considerar que nos referimos a dos estados de un mismo equipo,
+    es decir la información de un equipo ya inventariado y la información
+    de dicho equipo después de otro proceso de inventariado.
+    Compara dichas listas y devuelve un string con información de los componentes
+    que tenía anteriormente y ahora ya no posee, y con infomación de los componenetes 
+    que posee en el último uinventario y que no tenía en el anterior.
+    componentes 
+    """
     txt=""
     for i in xrange(len(old)):
         # Miro los componenetes nuevos que se han añadido
@@ -195,10 +276,16 @@ def comparar_equipos(new,old):
     return txt
            
 ###################### Programa principal #####################################
+# Ejecuto la utilidad lshw (http://ezix.org/project/wiki/HardwareLiSter) con
+# la opción de que el resultado lo guarde en un fichero con formato xml que
+# leemos posteriormente
 os.system("lshw -xml>/tmp/sys.xml")
 arbol = etree.parse ("/tmp/sys.xml")
 
+# La variable string texto la vamos a usar para guardar en ella la información
+# que vamos a mostrar por pantalla y vamos a mandar por correo electrónico
 texto=""
+
 # Num serie
 ns = ""
 # Versión IESGN: Si el equipo no tiene número de serie asignado se puede poner
@@ -209,6 +296,8 @@ uno): ")
 if ns == "iesgn":
     ns = "iesgn%s" % buscar_ns_iesgn()
 oldequipo = ""
+# Si el equipo ya está inventariado, leemos la información que tenemos actualmente
+# guardada en la base de datos.
 if buscar_n_serie(ns):
     oldequipo = leer_equipo(ns)
     texto += "Equipo ya inventariado\n"
@@ -216,7 +305,9 @@ else:
     texto += "Equipo nuevo\n"
 texto += "Número de serie: " + ns + "\n"
 
-# CPU
+# Componente CPU
+# Leemos los datos de la CPU del equipo, si no la tenemos guardada anteriormente
+# en la base de datos, la insrtamos
 ruta = "/node/node/node[description='CPU'][product]"
 columnas = ["vendor","product","slot"]
 datos = obtener_datos(arbol, ruta, columnas)
@@ -237,8 +328,9 @@ if buscar_n_serie(ns):
         else:
             condiciones = {"equipo_num_serie" : ns}
         borrar_componente(tabla, condiciones)
+
     
-# Insertamos los restantes componentes
+# Insertamos de nuevo los nuevos componentes
 tablas = ["equipo","ram","hd","cd","red"]
 rutas = ["/node/node[description='Motherboard']",
          "/node/node/node[description='System Memory']/node[size]",
@@ -260,7 +352,8 @@ for i in xrange(len(tablas)):
         datos = obtener_datos(arbol, rutas[i], columnas[i], [ns])
     insertar_componente(tablas[i], datos)
 
-
+# Leemos la información de los componenetes actuales
+# Si el equipo ya estaba inventariado, comparamos el estado de los dos equipos 
 newequipo = leer_equipo(ns)
 texto += escribir_equipo(newequipo)
 if oldequipo != "":
@@ -271,6 +364,7 @@ if oldequipo != "":
     else:
         texto += "\nNo ha habido ningún cambio desde el último inventario\n"
 
+# Imprimimos la información y la enviamos por correo electrónico
 print texto
 msg = MIMEText(texto)
 me = '%s' % parser.get('smtp', 'smtp_from')
@@ -280,7 +374,6 @@ msg['From'] = me
 msg['To'] = you
 
 # Si el equipo ya esta invnetariado y ha habido diferencia, confirmo la actualización
-
 actualizacion = True
 if oldequipo != "" and dif != "":
     resp = " "
